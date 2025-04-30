@@ -21,6 +21,8 @@ class UserSeeder extends Seeder
             'password' => Hash::make('Admin@123'),
             'avatar' => null, // Nullable, as per previous setup
             'email_verified_at' => now(),
+            'created_by' => null,
+            'is_admin' => true,
         ]);
     }
 }

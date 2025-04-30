@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Budget Control') }} - @yield('title', 'Home')</title>
-   @vite(['resources/css/app.css'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 font-sans antialiased">
 <div class="min-h-screen flex flex-col">
@@ -14,8 +14,8 @@
 
     <!-- Main Content with Optional Sidebar -->
     <div class="flex flex-1">
-        @if (auth()->check() && !in_array(Route::currentRouteName(), ['login', 'register', 'password.request', 'password.reset', 'verification.notice']))
-            <!-- Sidebar for authenticated users on non-auth pages -->
+        @if (auth()->check() && !in_array(Route::currentRouteName(), ['home', 'login', 'register', 'password.request', 'password.reset', 'verification.notice', 'password.confirm', 'verification.verify']))
+            <!-- Sidebar for authenticated users on non-excluded pages -->
             <x-sidebar />
             <main class="flex-1 p-6 lg:p-8 bg-slate-50 dark:bg-slate-800 transition-all duration-300">
                 @yield('content')
@@ -27,11 +27,11 @@
             </main>
         @endif
     </div>
+
+    <!-- Footer -->
+   <x-footer />
 </div>
 
-<script src="{{ asset('js/bootstrap.js') }}"></script>
 @stack('scripts')
-
-<x-footer />
 </body>
 </html>
