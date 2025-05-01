@@ -1,94 +1,154 @@
 @extends('layouts.app')
 
+@section('title', 'Upload Budget')
+
 @section('content')
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
-        <!-- Back Button with Left Arrow on Top Right -->
-        <a href="{{ route('budgets.index') }}" class="absolute top-4 right-4 inline-flex items-center px-6 py-3 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-300 ease-in-out shadow-lg">
-            <!-- Left Arrow Icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5 mr-2" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 19l-7-7 7-7"></path>
-            </svg>
-            Back
-        </a>
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header Section -->
+        <div class="mb-8 text-center sm:text-left">
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">Upload Budget</h1>
+            <p class="text-slate-600 dark:text-slate-400">Fill in the budget details below</p>
+        </div>
 
-        <h1 class="text-4xl font-semibold text-slate-800 dark:text-slate-200 mb-8 text-center">Upload Budget</h1>
-
-        <form action="{{ route('budgets.upload') }}" method="POST" class="bg-white dark:bg-slate-800 p-10 rounded-xl shadow-xl space-y-8">
-            @csrf
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Serial Field -->
-                <div>
-                    <label for="serial" class="block text-lg font-medium text-slate-700 dark:text-slate-300">Serial</label>
-                    <input type="text" name="serial" id="serial" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-sm shadow-md focus:ring-indigo-500 focus:border-indigo-500 px-4 py-3 transition duration-200" required>
-                </div>
-
-                <!-- Account Code Field -->
-                <div>
-                    <label for="account_code" class="block text-lg font-medium text-slate-700 dark:text-slate-300">Account Code</label>
-                    <input type="text" name="account_code" id="account_code" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-sm shadow-md focus:ring-indigo-500 focus:border-indigo-500 px-4 py-3 transition duration-200" required>
-                </div>
-
-                <!-- Account Head Field -->
-                <div>
-                    <label for="account_head_id" class="block text-lg font-medium text-slate-700 dark:text-slate-300">Account Head</label>
-                    <select name="account_head_id" id="account_head_id" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-sm shadow-md focus:ring-indigo-500 focus:border-indigo-500 px-4 py-3 transition duration-200" required>
-                        <option value="">Select Account Head</option>
-                        @foreach ($accountHeads as $accountHead)
-                            <option value="{{ $accountHead->id }}">{{ $accountHead->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Amount Field -->
-                <div>
-                    <label for="amount" class="block text-lg font-medium text-slate-700 dark:text-slate-300">Amount</label>
-                    <input type="number" name="amount" id="amount" step="0.01" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-sm shadow-md focus:ring-indigo-500 focus:border-indigo-500 px-4 py-3 transition duration-200" required>
-                </div>
-
-                <!-- Type Field -->
-                <div>
-                    <label for="type" class="block text-lg font-medium text-slate-700 dark:text-slate-300">Type</label>
-                    <select name="type" id="type" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-sm shadow-md focus:ring-indigo-500 focus:border-indigo-500 px-4 py-3 transition duration-200" required>
-                        <option value="estimated">Estimated</option>
-                        <option value="revised">Revised</option>
-                    </select>
-                </div>
-
-                <!-- Financial Year Field -->
-                <div>
-                    <label for="financial_year" class="block text-lg font-medium text-slate-700 dark:text-slate-300">Financial Year (YYYY-YYYY)</label>
-                    <input type="text" name="financial_year" id="financial_year" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-sm shadow-md focus:ring-indigo-500 focus:border-indigo-500 px-4 py-3 transition duration-200" required>
-                </div>
-
-                <!-- Department Field -->
-                <div>
-                    <label for="department_id" class="block text-lg font-medium text-slate-700 dark:text-slate-300">Department</label>
-                    <select name="department_id" id="department_id" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-sm shadow-md focus:ring-indigo-500 focus:border-indigo-500 px-4 py-3 transition duration-200" required>
-                        <option value="">Select Department</option>
-                        @foreach ($departments as $department)
-                            <option value="{{ $department->id }}">{{ $department->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Section Field -->
-                <div>
-                    <label for="section_id" class="block text-lg font-medium text-slate-700 dark:text-slate-300">Section</label>
-                    <select name="section_id" id="section_id" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-sm shadow-md focus:ring-indigo-500 focus:border-indigo-500 px-4 py-3 transition duration-200" required>
-                        <option value="">Select Section</option>
-                        @foreach ($sections as $section)
-                            <option value="{{ $section->id }}">{{ $section->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
+        <!-- Form Container -->
+        <div class="bg-white dark:bg-slate-800 shadow-xl rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+            <!-- Form Header with Gradient -->
+            <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-slate-800 dark:to-slate-900">
+                <h2 class="text-xl font-semibold text-white dark:text-slate-200">Budget Information</h2>
             </div>
 
-            <!-- Submit Button -->
-            <div class="flex justify-center mt-8">
-                <button type="submit" class="px-10 py-4 bg-indigo-600 text-white rounded-lg shadow-xl hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-300 ease-in-out">
-                    Submit
-                </button>
+            <!-- Form Content -->
+            <div class="p-6">
+                <form action="{{ route('budgets.upload') }}" method="POST" class="space-y-6">
+                    @csrf
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Serial Field -->
+                        <div>
+                            <label for="serial" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Serial Number</label>
+                            <input type="text" name="serial" id="serial"
+                                   placeholder="{{ $lastSerial ? 'Last serial was ' . $lastSerial : 'Enter serial number' }}"
+                                   class="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                   required>
+                            @error('serial')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Account Head Field -->
+                        <div>
+                            <label for="account_head_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Account Head</label>
+                            <select name="account_head_id" id="account_head_id"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                    required>
+                                <option value="">Select Account Head</option>
+                                @forelse ($accountHeads as $accountHead)
+                                    <option value="{{ $accountHead->id }}">
+                                        {{ $accountHead->name }} ({{ $accountHead->account_code }})
+                                    </option>
+                                @empty
+                                    <option value="" disabled>No unused account heads available</option>
+                                @endforelse
+                            </select>
+                            @error('account_head_id')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Amount Field -->
+                        <div>
+                            <label for="amount" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Amount (BDT)</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-slate-500 dark:text-slate-400">৳</span>
+                                </div>
+                                <input type="number" name="amount" id="amount" step="0.01"
+                                       class="pl-8 w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                       required>
+                            </div>
+                            @error('amount')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Budget Type Field -->
+                        <div>
+                            <label for="type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Budget Type</label>
+                            <select name="type" id="type"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                    required>
+                                <option value="estimated">Estimated</option>
+                                <option value="revised">Revised</option>
+                            </select>
+                            @error('type')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Financial Year Field -->
+                        <div class="md:col-span-2">
+                            <label for="financial_year" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Financial Year</label>
+                            <div class="relative">
+                                <select name="financial_year" id="financial_year"
+                                        class="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                        required>
+                                    <option value="">Select Financial Year</option>
+                                    @forelse ($financialYears as $year)
+                                        <option value="{{ $year }}">{{ $year }}</option>
+                                    @empty
+                                        <option value="" disabled>No financial years available</option>
+                                    @endforelse
+                                    <option value="custom">Custom Year (YYYY-YYYY)</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <!-- Custom Financial Year Input (Hidden by Default) -->
+                            <div id="custom-financial-year" class="mt-2 hidden">
+                                <input type="text" name="custom_financial_year" id="custom_financial_year"
+                                       placeholder="YYYY-YYYY"
+                                       class="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                       pattern="\d{4}-\d{4}">
+                            </div>
+                            @error('financial_year')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-6">
+                        <a href="{{ route('budgets.index') }}"
+                           class="inline-flex justify-center items-center px-6 py-3 border border-slate-300 shadow-sm text-base font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors duration-200">
+                            Cancel
+                        </a>
+                        <button type="submit"
+                                class="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            Upload Budget
+                        </button>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
     </div>
+
+    <!-- JavaScript to Show/Hide Custom Financial Year Input -->
+    <script>
+        document.getElementById('financial_year').addEventListener('change', function () {
+            const customInput = document.getElementById('custom-financial-year');
+            if (this.value === 'custom') {
+                customInput.classList.remove('hidden');
+                document.getElementById('custom_financial_year').setAttribute('required', 'required');
+            } else {
+                customInput.classList.add('hidden');
+                document.getElementById('custom_financial_year').removeAttribute('required');
+            }
+        });
+    </script>
 @endsection

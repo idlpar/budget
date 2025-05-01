@@ -1,53 +1,40 @@
 <?php
+
 namespace App\Imports;
 
-use App\Models\AccountHead;
 use App\Models\Budget;
+use App\Models\AccountHead;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Illuminate\Support\Str;
 
 class EstimatedBudgetImport implements ToModel, WithHeadingRow
 {
-    protected $financialYear;
-    protected $departmentId;
-    protected $sectionId;
-    protected $userId;
+    protected $financial_year;
+    protected $user_id;
 
-    public function __construct($financialYear, $departmentId, $sectionId, $userId)
+    public function __construct($financial_year, $user_id)
     {
-        $this->financialYear = $financialYear;
-        $this->departmentId = $departmentId;
-        $this->sectionId = $sectionId;
-        $this->userId = $userId;
+        $this->financial_year = $financial_year;
+        $this->user_id = $user_id;
     }
 
     public function model(array $row)
     {
-        $code = (string) $row['code'];
+        $accountHead = AccountHead::where('account_code', $row['account_code'])->first();
 
-        $accountHead = AccountHead::firstOrCreate(
-            ['account_code' => $code],
-            ['name' => $row['name_of_account'], 'type' => 'expense', 'created_by' => $this->userId]
-        );
+        if (!$accountHead) {
+            return null; // Skip rows with invalid account codes
+        }
 
-        $estimatedAmount = $row['estimated_budget_lac'] * 100000;
-
-        return Budget::updateOrCreate(
-            [
-                'account_head_id' => $accountHead->id,
-                'financial_year' => $this->financialYear,
-                'type' => 'estimated',
-            ],
-            [
-                'serial' => Str::uuid()->toString(),
-                'account_code' => $code,
-                'amount' => $estimatedAmount,
-                'department_id' => $this->departmentId,
-                'section_id' => $this->sectionId,
-                'user_id' => $this->userId,
-                'status' => 'active',
-            ]
-        );
+        return new Budget([
+            'serial' => $row['serial'],
+            'account_head_id' => $accountHead->id,
+            'account_code' => $row['account_code'], // Add this line
+            'amount' => $row['amount'],
+            'type' => 'estimated',
+            'financial_year' => $this->financial_year,
+            'user_id' => $this->user_id,
+            'status' => 'active',
+        ]);
     }
 }

@@ -114,7 +114,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Budget Management
     Route::get('budgets', [BudgetController::class, 'index'])->name('budgets.index');
-    Route::get('budgets/upload', [BudgetController::class, 'uploadForm'])->name('budgets.upload-form');
+    Route::get('budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
+    Route::get('budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
+    Route::put('budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
+    Route::get('budgets/upload/form', [BudgetController::class, 'uploadForm'])->name('budgets.upload-form');
     Route::post('budgets/upload', [BudgetController::class, 'upload'])->name('budgets.upload');
     Route::get('budgets/import', [BudgetController::class, 'showImportForm'])->name('budgets.import.form');
     Route::post('budgets/import/estimated', [BudgetController::class, 'importEstimated'])->name('budgets.import.estimated');

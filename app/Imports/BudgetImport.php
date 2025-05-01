@@ -16,8 +16,6 @@ class BudgetImport implements ToModel, WithHeadingRow
             'account_head_id' => $row['account_head_id'],
             'amount' => $row['amount'],
             'type' => $row['type'],
-            'department_id' => $row['department_id'],
-            'section_id' => $row['section_id'],
             'user_id' => Auth::id(),
         ]);
     }

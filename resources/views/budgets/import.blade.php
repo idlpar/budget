@@ -38,27 +38,6 @@
                         @error('financial_year') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
                     </div>
 
-                    <div>
-                        <label for="department_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
-                        <select name="department_id" id="department_id"
-                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:text-white"
-                                onchange="fetchSections(this.value)">
-                            <option value="">Select Department</option>
-                            @foreach($departments as $department)
-                                <option value="{{ $department->id }}">{{ $department->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('department_id') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label for="section_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Section</label>
-                        <select name="section_id" id="section_id"
-                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:text-white">
-                            <option value="">Select Section</option>
-                        </select>
-                        @error('section_id') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
-                    </div>
 
                     <div>
                         <label for="file_estimated" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Excel File</label>
