@@ -32,7 +32,7 @@
                     @auth
                         <li><a href="{{ route('dashboard') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Dashboard</a></li>
                         <li><a href="{{ route('budgets.index') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Budgets</a></li>
-                        <li><a href="{{ route('approvals.index') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Approvals</a></li>
+                        <li><a href="{{ route('expenses.index') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Approvals</a></li>
                     @else
                         <li><a href="{{ route('login') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Login</a></li>
                         <li><a href="{{ route('register') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Register</a></li>
@@ -44,7 +44,7 @@
                 <h3 class="text-base font-semibold text-white mb-3">Our Services</h3>
                 <ul class="space-y-2">
                     <li><a href="{{ route('budgets.index') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Budget Management</a></li>
-                    <li><a href="{{ route('approvals.index') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Daily Approvals</a></li>
+                    <li><a href="{{ route('expenses.index') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Daily Approvals</a></li>
                     <li><a href="{{ route('imports.index') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Data Imports</a></li>
                     <li><a href="{{ route('reports.index') }}" class="text-slate-300 hover:text-emerald-400 transition-colors duration-200 text-sm">Reports</a></li>
                 </ul>

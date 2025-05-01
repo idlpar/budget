@@ -1,19 +1,31 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class AccountHead extends Model
 {
-    protected $fillable = ['name', 'code'];
+    protected $fillable = [
+        'account_code',
+        'name',
+        'type',
+        'created_by',
+        'updated_by',
+    ];
 
-    public function budgets()
+    public function creator()
     {
-        return $this->hasMany(Budget::class);
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function approvals()
+    public function updater()
     {
-        return $this->hasMany(Approval::class);
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function changes()
+    {
+        return $this->hasMany(AccountHeadChange::class, 'account_head_id');
     }
 }

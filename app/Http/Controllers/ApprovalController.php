@@ -15,7 +15,7 @@ class ApprovalController extends Controller
         $approvals = Approval::with(['accountHead', 'department', 'section', 'user'])
             ->orderBy('transaction_date', 'desc')
             ->get();
-        return view('approvals.index', compact('approvals'));
+        return view('expenses.index', compact('approvals'));
     }
 
     public function create()
@@ -23,7 +23,7 @@ class ApprovalController extends Controller
         $departments = Department::all();
         $sections = Section::all();
         $accountHeads = AccountHead::all();
-        return view('approvals.create', compact('departments', 'sections', 'accountHeads'));
+        return view('expenses.create', compact('departments', 'sections', 'accountHeads'));
     }
 
     public function store(Request $request)
@@ -38,6 +38,6 @@ class ApprovalController extends Controller
 
         Approval::create(array_merge($validated, ['user_id' => Auth::id()]));
 
-        return redirect()->route('approvals.index')->with('success', 'Approval posted successfully.');
+        return redirect()->route('expenses.index')->with('success', 'Approval posted successfully.');
     }
 }

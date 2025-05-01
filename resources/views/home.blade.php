@@ -7,10 +7,7 @@
     <section class="bg-gradient-to-br from-indigo-600 to-emerald-500 dark:from-indigo-900 dark:to-emerald-700 text-white py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="flex justify-center mb-6">
-                <svg class="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Bakhrabad Gas Distribution Company Limited Logo">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2m0 6v6" />
-                </svg>
+                <img src="{{ asset('logo.png') }}" class="h-24 w-24" alt="Logo">
             </div>
             <h1 class="text-4xl md:text-5xl font-bold mb-4">Bakhrabad Gas Distribution Company Limited</h1>
             <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto">Streamline your financial operations with our advanced budget control system, designed for efficiency and precision.</p>

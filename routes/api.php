@@ -1,19 +1,10 @@
 <?php
-
+use App\Models\Section;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned the "api" middleware group. Make something great!
-|
-*/
-
-Route::middleware('api')->prefix('api')->group(function () {
-    // Define API routes here if needed
-    // Example: Route::get('/example', [SomeController::class, 'index']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/sections', function (Request $request) {
+        return Section::where('department_id', $request->department_id)->get();
+    });
 });

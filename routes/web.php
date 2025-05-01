@@ -2,9 +2,10 @@
 
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BudgetController;
-use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LogInController;
+use App\Http\Controllers\AccountHeadController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 
@@ -27,6 +28,18 @@ Route::get('/debug-session', function () {
         'session' => session()->all(),
     ]);
 })->name('debug.session');
+
+// Check Admin Status
+Route::get('/check-admin', function () {
+    $user = auth()->user();
+    Log::info('Check admin status', ['user_id' => $user->id, 'is_admin' => $user->isAdmin()]);
+    return response()->json([
+        'user_id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email,
+        'is_admin' => $user->isAdmin(),
+    ]);
+})->name('check.admin')->middleware('auth');
 
 // Authentication Routes
 Route::get('/register', [LogInController::class, 'createRegister'])
@@ -93,7 +106,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('dashboard');
 
     // User Management
-    Route::resource('users', UserController::class)->only(['index', 'create', 'store'])->middleware('admin');
+    Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update'])->middleware('admin');
     Route::get('/change-password', [UserController::class, 'changePasswordForm'])->name('users.change-password');
     Route::post('/change-password', [UserController::class, 'changePassword'])->name('users.update-password');
     Route::get('/profile', [UserController::class, 'editProfile'])->name('profile.edit');
@@ -103,16 +116,36 @@ Route::middleware(['auth'])->group(function () {
     Route::get('budgets', [BudgetController::class, 'index'])->name('budgets.index');
     Route::get('budgets/upload', [BudgetController::class, 'uploadForm'])->name('budgets.upload-form');
     Route::post('budgets/upload', [BudgetController::class, 'upload'])->name('budgets.upload');
+    Route::get('budgets/import', [BudgetController::class, 'showImportForm'])->name('budgets.import.form');
+    Route::post('budgets/import/estimated', [BudgetController::class, 'importEstimated'])->name('budgets.import.estimated');
+    Route::post('budgets/import/revised', [BudgetController::class, 'importRevised'])->name('budgets.import.revised');
+    Route::patch('budgets/{budget}/revise', [BudgetController::class, 'revise'])->name('budgets.revise');
 
-    // Approvals
-    Route::resource('approvals', ApprovalController::class)->only(['index', 'create', 'store']);
+    // Expenses (previously Approvals)
+    Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store']);
+    Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+    Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
 
-    // Imports
-    Route::get('imports', [ImportController::class, 'showImportForm'])->name('imports.index');
-    Route::post('imports', [ImportController::class, 'import'])->name('imports.store');
+    // Imports (Restricted to Admins)
+    Route::middleware('admin')->group(function () {
+        Route::get('imports', [ImportController::class, 'showImportForm'])->name('imports.index');
+        Route::post('imports', [ImportController::class, 'import'])->name('imports.store');
+    });
 
     // Reports
     Route::get('reports', function () {
         return view('reports.index');
     })->name('reports.index');
+
+    // Account Heads (Admin Only)
+    Route::middleware('admin')->group(function () {
+        Route::get('accounts', [AccountHeadController::class, 'index'])->name('accounts.index');
+        Route::get('accounts/create', [AccountHeadController::class, 'create'])->name('accounts.create');
+        Route::post('accounts', [AccountHeadController::class, 'store'])->name('accounts.store');
+        Route::get('accounts/{accountHead}', [AccountHeadController::class, 'show'])->name('accounts.show');
+        Route::get('accounts/{accountHead}/edit', [AccountHeadController::class, 'edit'])->name('accounts.edit');
+        Route::put('accounts/{accountHead}', [AccountHeadController::class, 'update'])->name('accounts.update');
+        Route::get('accounts/import/form', [AccountHeadController::class, 'importForm'])->name('accounts.import.form');
+        Route::post('accounts/import', [AccountHeadController::class, 'import'])->name('accounts.import');
+    });
 });

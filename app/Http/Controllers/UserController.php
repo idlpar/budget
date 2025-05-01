@@ -27,7 +27,9 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:
+
+255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'avatar' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
@@ -35,6 +37,7 @@ class UserController extends Controller
 
         $user = new User($validated);
         $user->password = Hash::make($validated['password']);
+        $user->created_by = auth()->id();
 
         if ($request->hasFile('avatar')) {
             $user->avatar = $request->file('avatar')->store('avatars', 'public');
@@ -49,34 +52,49 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
 
+    public function show(User $user)
+    {
+        Log::info('User show accessed', ['user_id' => $user->id, 'accessed_by' => auth()->id()]);
+        return view('users.show', compact('user'));
+    }
+
     public function edit(User $user)
     {
-        Log::info('User edit form accessed', ['user_id' => $user->id, 'accessed_by' => auth()->id()]);
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+        Log::info('User name edit form accessed', ['user_id' => $user->id, 'accessed_by' => auth()->id()]);
         return view('users.edit', compact('user'));
     }
 
     public function update(Request $request, User $user)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'avatar' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
-        ]);
-
-        $user->fill($validated);
-
-        if ($request->hasFile('avatar')) {
-            if ($user->avatar) {
-                Storage::disk('public')->delete($user->avatar);
-            }
-            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
         }
 
-        $user->save();
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
 
-        Log::info('User updated', ['user_id' => $user->id, 'updated_by' => auth()->id()]);
+        $data = ['name' => $validated['name']];
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+        if ($user->name !== $validated['name']) {
+            $data['previous_name'] = $user->name;
+            $data['name_changed_by'] = auth()->id();
+            $data['name_changed_at'] = now();
+        }
+
+        $user->update($data);
+
+        Log::info('User name updated', [
+            'user_id' => $user->id,
+            'previous_name' => $data['previous_name'] ?? null,
+            'new_name' => $validated['name'],
+            'updated_by' => auth()->id()
+        ]);
+
+        return redirect()->route('users.index')->with('success', 'User name updated successfully.');
     }
 
     public function changePasswordForm(Request $request)
@@ -103,47 +121,46 @@ class UserController extends Controller
 
     public function editProfile(Request $request)
     {
-        Log::info('Profile edit form accessed', ['user_id' => auth()->id()]);
-        return view('profile.edit', ['user' => $request->user()]);
+        $user = $request->user();
+        Log::info('Profile edit form accessed', ['user_id' => $user->id]);
+        return view('profile.edit', compact('user'));
     }
 
     public function updateProfile(Request $request)
     {
         $user = $request->user();
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
+        $rules = [
             'email' => 'required|email|unique:users,email,' . $user->id,
             'avatar' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
-        ]);
+        ];
 
-        $user->fill($validated);
+        if (auth()->user()->isAdmin()) {
+            $rules['name'] = 'required|string|max:255';
+        }
+
+        $validated = $request->validate($rules);
+
+        $data = [
+            'email' => $validated['email'],
+        ];
+
+        if (auth()->user()->isAdmin() && isset($validated['name']) && $user->name !== $validated['name']) {
+            $data['name'] = $validated['name'];
+            $data['previous_name'] = $user->name;
+            $data['name_changed_by'] = auth()->id();
+            $data['name_changed_at'] = now();
+        }
 
         if ($request->hasFile('avatar')) {
             if ($user->avatar) {
                 Storage::disk('public')->delete($user->avatar);
             }
-            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
-        $user->save();
+        $user->update($data);
 
         Log::info('Profile updated', ['user_id' => $user->id]);
         return redirect()->route('profile.edit')->with('success', 'Profile updated successfully.');
-    }
-
-    public function show(User $user)
-    {
-        Log::info('User show accessed', ['user_id' => $user->id, 'accessed_by' => auth()->id()]);
-        return view('users.show', compact('user'));
-    }
-
-    public function destroy(User $user)
-    {
-        if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
-        }
-        $user->delete();
-        Log::info('User deleted', ['user_id' => $user->id, 'deleted_by' => auth()->id()]);
-        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
 }

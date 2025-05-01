@@ -7,7 +7,7 @@ class Budget extends Model
 {
     protected $fillable = [
         'serial', 'account_code', 'account_head_id', 'amount', 'type',
-        'department_id', 'section_id', 'user_id',
+        'financial_year', 'status', 'department_id', 'section_id', 'user_id'
     ];
 
     public function accountHead()
@@ -28,5 +28,9 @@ class Budget extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class);
     }
 }

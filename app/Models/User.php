@@ -19,12 +19,9 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'avatar',
-        'created_by',
-        'is_admin',
+        'name', 'previous_name', 'email', 'email_verified_at', 'avatar', 'password',
+        'name_changed_at', 'is_admin', 'created_by', 'name_changed_by',
+        'role', 'division_id', 'department_id', 'section_id'
     ];
 
     /**
@@ -46,12 +43,13 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'name_changed_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
         ];
     }
 
-    public function creator()
+    public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
@@ -60,7 +58,10 @@ class User extends Authenticatable
     {
         return $this->is_admin;
     }
-
+    public function nameChangedBy()
+    {
+        return $this->belongsTo(User::class, 'name_changed_by');
+    }
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new ResetPassword($token));
