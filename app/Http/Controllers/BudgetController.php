@@ -98,11 +98,11 @@ class BudgetController extends Controller
     {
         $usedAccountHeadIds = Budget::pluck('account_head_id')->toArray();
         $accountHeads = AccountHead::whereNotIn('id', $usedAccountHeadIds)
-            ->orderBy('name', 'asc') // You can replace 'name' with 'id' or another field
+            ->orderBy('name', 'asc')
             ->get();
 
         $latestBudget = Budget::orderBy('id', 'desc')->first();
-        $lastSerial = $latestBudget ? $latestBudget->serial : null;
+        $lastSerial = $latestBudget ? $latestBudget->serial : 'No Serial Number Yet Given';
 
         $financialYears = Budget::select('financial_year')
             ->distinct()
@@ -121,21 +121,19 @@ class BudgetController extends Controller
             'account_head_id' => 'required|exists:account_heads,id',
             'amount' => 'required|numeric|min:0',
             'type' => 'required|in:estimated,revised',
-            'financial_year' => 'required_if:custom_financial_year,==,null|string|regex:/^[0-9]{4}-[0-9]{4}$/',
-            'custom_financial_year' => 'required_if:financial_year,==,custom|string|regex:/^[0-9]{4}-[0-9]{4}$/',
+            'financial_year' => 'required|string|regex:/^[0-9]{4}-[0-9]{4}$/',
         ]);
 
-        // Use custom_financial_year if financial_year is "custom"
-        $financialYear = $request->input('financial_year') === 'custom'
-            ? $request->input('custom_financial_year')
-            : $request->input('financial_year');
+        // Fetch the account_code from the AccountHead
+        $accountHead = \App\Models\AccountHead::findOrFail($validated['account_head_id']);
 
         Budget::create([
             'serial' => $validated['serial'],
             'account_head_id' => $validated['account_head_id'],
+            'account_code' => $accountHead->account_code, // Add account_code
             'amount' => $validated['amount'],
             'type' => $validated['type'],
-            'financial_year' => $financialYear,
+            'financial_year' => $validated['financial_year'],
             'user_id' => Auth::id(),
             'status' => 'active',
         ]);

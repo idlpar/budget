@@ -7,7 +7,7 @@ class Budget extends Model
 {
     protected $fillable = [
         'serial', 'account_code', 'account_head_id', 'amount', 'type',
-        'financial_year', 'status', 'department_id', 'section_id', 'user_id'
+        'financial_year', 'status', 'user_id'
     ];
 
     public function accountHead()

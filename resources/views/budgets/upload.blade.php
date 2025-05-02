@@ -66,6 +66,8 @@
                                        class="pl-8 w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                                        required>
                             </div>
+                            <!-- Display Formatted Amount -->
+                            <div id="formatted-amount" class="mt-2 text-sm text-slate-600 dark:text-slate-400"></div>
                             @error('amount')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
@@ -98,20 +100,12 @@
                                     @empty
                                         <option value="" disabled>No financial years available</option>
                                     @endforelse
-                                    <option value="custom">Custom Year (YYYY-YYYY)</option>
                                 </select>
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                     <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                 </div>
-                            </div>
-                            <!-- Custom Financial Year Input (Hidden by Default) -->
-                            <div id="custom-financial-year" class="mt-2 hidden">
-                                <input type="text" name="custom_financial_year" id="custom_financial_year"
-                                       placeholder="YYYY-YYYY"
-                                       class="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                                       pattern="\d{4}-\d{4}">
                             </div>
                             @error('financial_year')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -138,17 +132,41 @@
         </div>
     </div>
 
-    <!-- JavaScript to Show/Hide Custom Financial Year Input -->
+    <!-- JavaScript for Amount Formatting -->
     <script>
-        document.getElementById('financial_year').addEventListener('change', function () {
-            const customInput = document.getElementById('custom-financial-year');
-            if (this.value === 'custom') {
-                customInput.classList.remove('hidden');
-                document.getElementById('custom_financial_year').setAttribute('required', 'required');
-            } else {
-                customInput.classList.add('hidden');
-                document.getElementById('custom_financial_year').removeAttribute('required');
+        document.getElementById('amount').addEventListener('input', function () {
+            const amountInput = this.value;
+            const formattedAmountDiv = document.getElementById('formatted-amount');
+
+            // Clear output if input is empty or invalid
+            if (!amountInput || isNaN(amountInput)) {
+                formattedAmountDiv.textContent = '';
+                return;
             }
+
+            // Parse the input as a float
+            const amount = parseFloat(amountInput);
+
+            // Split into integer and decimal parts
+            const [integerPart, decimalPart = ''] = Math.abs(amount).toFixed(2).split('.');
+            let formattedInteger = integerPart;
+
+            // Format integer part in Bangladeshi/Indian style (XX,XX,XXX)
+            if (integerPart.length > 3) {
+                const lastThree = integerPart.slice(-3);
+                const otherNumbers = integerPart.slice(0, -3);
+                formattedInteger = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+            }
+
+            // Combine integer and decimal parts
+            let formattedNumber = (amount < 0 ? '-' : '') + formattedInteger;
+            if (decimalPart && parseInt(decimalPart) !== 0) {
+                formattedNumber += '.' + decimalPart;
+            }
+            // Note: Not adding .00 for whole numbers since $showZeroDecimals = false by default
+
+            // Display formatted amount with Taka symbol
+            formattedAmountDiv.textContent = `Formatted Amount: ৳ ${formattedNumber}`;
         });
     </script>
 @endsection
