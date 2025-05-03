@@ -209,3 +209,7 @@ Route::middleware('auth')->group(function () {
         return response()->json($department->sections);
     });
 });
+
+Route::get('/api/account-heads/{accountHeadId}/remaining-budget', [ExpenseController::class, 'getRemainingBudget']);
+Route::get('/api/divisions/{divisionId}/departments', [OrganogramController::class, 'getDepartments']);
+Route::get('/api/departments/{departmentId}/sections', [OrganogramController::class, 'getSections']);

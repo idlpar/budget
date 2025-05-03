@@ -7,6 +7,7 @@ use App\Models\Budget;
 use App\Models\AccountHead;
 use App\Models\Transaction;
 use App\Models\TransactionEntry;
+use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -14,10 +15,11 @@ use Illuminate\Support\Facades\Log;
 
 class ExpenseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $query = Expense::query()->with(['accountHead', 'budget', 'department', 'section']);
+        $query = Expense::query()->with(['accountHead', 'department', 'section']);
 
+        // Apply hierarchy-based filtering
         if (!auth()->user()->is_admin) {
             if (auth()->user()->division_id) {
                 $query->whereHas('department', function ($q) {
@@ -32,16 +34,103 @@ class ExpenseController extends Controller
             }
         }
 
+        // Filtering for reports
+        if ($request->filled('division_id')) {
+            $query->whereHas('department', function ($q) use ($request) {
+                $q->where('division_id', $request->division_id);
+            });
+        }
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
+        }
+        if ($request->filled('section_id')) {
+            $query->where('section_id', $request->section_id);
+        }
+        if ($request->filled('account_head_id')) {
+            $query->whereHas('transactionEntries', function ($q) use ($request) {
+                $q->where('account_head_id', $request->account_head_id);
+            });
+        }
+
+        // Date range filtering
+        if ($request->filled('report_type')) {
+            $startDate = now();
+            $endDate = now();
+            switch ($request->report_type) {
+                case 'daily':
+                    $startDate = $endDate = $request->filled('date') ? $request->date : now()->toDateString();
+                    break;
+                case 'weekly':
+                    $startDate = now()->startOfWeek();
+                    $endDate = now()->endOfWeek();
+                    break;
+                case 'monthly':
+                    $startDate = now()->startOfMonth();
+                    $endDate = now()->endOfMonth();
+                    break;
+                case 'yearly':
+                    $startDate = now()->startOfYear();
+                    $endDate = now()->endOfYear();
+                    break;
+                case 'custom':
+                    $startDate = $request->start_date;
+                    $endDate = $request->end_date;
+                    break;
+            }
+            $query->whereBetween('transaction_date', [$startDate, $endDate]);
+        }
+
         $expenses = $query->paginate(10);
-        return view('expenses.index', compact('expenses'));
+
+        // Calculate totals and remaining budget
+        $totalExpenses = $query->sum('amount');
+        $budgets = Budget::where('financial_year', now()->year)->get();
+        $remainingBudgets = $budgets->mapWithKeys(function ($budget) use ($query) {
+            $totalExpenses = $query->whereHas('transactionEntries', function ($q) use ($budget) {
+                $q->where('account_head_id', $budget->account_head_id);
+            })->sum('amount');
+            $budgetLimit = $budget->type === 'revised' ? $budget->amount : (Budget::where('account_head_id', $budget->account_head_id)
+                ->where('type', 'revised')
+                ->where('financial_year', $budget->financial_year)
+                ->first()?->amount ?? $budget->amount);
+            return [$budget->account_head_id => $budgetLimit - $totalExpenses];
+        });
+
+        // Export to CSV if requested
+        if ($request->has('export')) {
+            $csvData = $expenses->map(function ($expense) {
+                return [
+                    'Date' => $expense->transaction_date,
+                    'Division' => $expense->department->division->name,
+                    'Department' => $expense->department->name,
+                    'Section' => $expense->section->name,
+                    'Account Head' => $expense->transactionEntries->first()->accountHead->name,
+                    'Amount' => $expense->amount,
+                    'Status' => $expense->status,
+                ];
+            })->toArray();
+
+            $csv = "Date,Division,Department,Section,Account Head,Amount,Status\n";
+            foreach ($csvData as $row) {
+                $csv .= implode(',', $row) . "\n";
+            }
+
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="expense_report.csv"',
+            ]);
+        }
+
+        $divisions = Division::all();
+        $accountHeads = AccountHead::all();
+        return view('expenses.index', compact('expenses', 'divisions', 'accountHeads', 'totalExpenses', 'remainingBudgets'));
     }
 
     public function create()
     {
-        $budgets = Budget::where('status', 'active')->get();
         $accountHeads = AccountHead::all();
-        $divisions = \App\Models\Division::all();
-        return view('expenses.create', compact('budgets', 'accountHeads', 'divisions'));
+        $divisions = Division::all();
+        return view('expenses.create', compact('accountHeads', 'divisions'));
     }
 
     public function store(Request $request)
@@ -50,7 +139,6 @@ class ExpenseController extends Controller
             'account_heads' => 'required|array|min:1',
             'account_heads.*.account_head_id' => 'required|exists:account_heads,id',
             'account_heads.*.amount' => 'required|numeric|min:0.01',
-            'budget_id' => 'required|exists:budgets,id',
             'department_id' => 'required|exists:departments,id',
             'section_id' => 'required|exists:sections,id',
             'transaction_date' => 'required|date',
@@ -64,6 +152,9 @@ class ExpenseController extends Controller
         try {
             DB::beginTransaction();
 
+            // Determine the current financial year
+            $financialYear = now()->year;
+
             // Check budget limits for each account head
             $errors = [];
             foreach ($request->account_heads as $entry) {
@@ -71,27 +162,27 @@ class ExpenseController extends Controller
                 $amount = $entry['amount'];
 
                 $budget = Budget::where('account_head_id', $accountHeadId)
-                    ->where('financial_year', Budget::findOrFail($request->budget_id)->financial_year)
+                    ->where('financial_year', $financialYear)
                     ->where('status', 'active')
                     ->first();
 
                 if (!$budget) {
-                    $errors[] = "No active budget found for account head ID {$accountHeadId}.";
+                    $errors[] = "No active budget found for account head ID {$accountHeadId} in financial year {$financialYear}.";
                     continue;
                 }
 
-                $totalExpenses = Expense::where('budget_id', $budget->id)
-                    ->where('status', 'approved')
-                    ->sum('amount');
+                $totalExpenses = Expense::whereHas('transactionEntries', function ($q) use ($accountHeadId) {
+                    $q->where('account_head_id', $accountHeadId);
+                })->where('status', 'approved')->sum('amount');
 
-                $budgetLimit = $budget->type === 'revised' ? $budget->amount : Budget::where('account_head_id', $accountHeadId)
+                $budgetLimit = $budget->type === 'revised' ? $budget->amount : (Budget::where('account_head_id', $accountHeadId)
                     ->where('type', 'revised')
                     ->where('financial_year', $budget->financial_year)
-                    ->first()?->amount ?? $budget->amount;
+                    ->first()?->amount ?? $budget->amount);
 
                 if ($totalExpenses + $amount > $budgetLimit) {
                     $accountHead = AccountHead::find($accountHeadId);
-                    $errors[] = "Expense for {$accountHead->name} exceeds the {$budget->type} budget limit.";
+                    $errors[] = "Expense for {$accountHead->name} exceeds the {$budget->type} budget limit of {$budgetLimit} BDT.";
                 }
             }
 
@@ -102,7 +193,6 @@ class ExpenseController extends Controller
 
             // Create expense and transaction
             $expense = Expense::create([
-                'budget_id' => $request->budget_id,
                 'department_id' => $request->department_id,
                 'section_id' => $request->section_id,
                 'amount' => collect($request->account_heads)->sum('amount'),
@@ -143,6 +233,31 @@ class ExpenseController extends Controller
             ]);
             return redirect()->back()->with('error', 'Failed to record expense: ' . $e->getMessage());
         }
+    }
+
+    public function getRemainingBudget($accountHeadId)
+    {
+        $financialYear = now()->year;
+        $budget = Budget::where('account_head_id', $accountHeadId)
+            ->where('financial_year', $financialYear)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$budget) {
+            return response()->json(['remaining_budget' => 0], 404);
+        }
+
+        $totalExpenses = Expense::whereHas('transactionEntries', function ($q) use ($accountHeadId) {
+            $q->where('account_head_id', $accountHeadId);
+        })->where('status', 'approved')->sum('amount');
+
+        $budgetLimit = $budget->type === 'revised' ? $budget->amount : (Budget::where('account_head_id', $accountHeadId)
+            ->where('type', 'revised')
+            ->where('financial_year', $budget->financial_year)
+            ->first()?->amount ?? $budget->amount);
+
+        $remainingBudget = $budgetLimit - $totalExpenses;
+        return response()->json(['remaining_budget' => $remainingBudget]);
     }
 
     public function approve(Request $request, Expense $expense)
