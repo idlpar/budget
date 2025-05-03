@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -49,15 +50,46 @@ class User extends Authenticatable
         ];
     }
 
-    public function createdBy()
+    // Relationships
+    public function division()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(Division::class);
     }
 
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function section()
+    {
+        return $this->belongsTo(Section::class);
+    }
+
+
+
+    public function isSectionHead()
+    {
+        return $this->hasRole('section_head');
+    }
+
+    public function isStaff()
+    {
+        return $this->hasRole('staff');
+    }
     public function isAdmin()
     {
         return $this->is_admin;
     }
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+    public function changes(): HasMany
+    {
+        return $this->hasMany(UserChange::class, 'user_id');
+    }
+
     public function nameChangedBy()
     {
         return $this->belongsTo(User::class, 'name_changed_by');

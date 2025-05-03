@@ -73,26 +73,26 @@
                         <div>
                             <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Serial</label>
                             <input type="text" name="serial" value="{{ request('serial') }}" placeholder="Filter Serial"
-                                   class="w-full text-sm rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                   class="w-full text-sm px-2 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Account Code</label>
                             <input type="text" name="account_code" value="{{ request('account_code') }}" placeholder="Filter Code"
-                                   class="w-full text-sm rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                   class="w-full text-sm px-2 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Account Head</label>
                             <input type="text" name="account_head" value="{{ request('account_head') }}" placeholder="Filter Head"
-                                   class="w-full text-sm rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                   class="w-full text-sm px-2 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Amount</label>
                             <input type="number" name="amount" value="{{ request('amount') }}" placeholder="Filter Amount"
-                                   class="w-full text-sm rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                   class="w-full text-sm px-2 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Budget Type</label>
-                            <select name="type" class="w-full text-sm rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                            <select name="type" class="w-full text-sm px-2 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                                 <option value="">All Types</option>
                                 <option value="estimated" {{ request('type') == 'estimated' ? 'selected' : '' }}>Estimated</option>
                                 <option value="revised" {{ request('type') == 'revised' ? 'selected' : '' }}>Revised</option>
@@ -101,12 +101,12 @@
                         <div>
                             <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Uploaded By</label>
                             <input type="text" name="uploaded_by" value="{{ request('uploaded_by') }}" placeholder="Filter Uploader"
-                                   class="w-full text-sm rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                   class="w-full text-sm px-2 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Date Range</label>
                             <input type="date" name="created_at" value="{{ request('created_at') }}"
-                                   class="w-full text-sm rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                   class="w-full text-sm px-2 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                         </div>
                         <div class="flex items-end">
                             <button type="submit" class="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-150">

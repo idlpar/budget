@@ -26,20 +26,24 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Created By</label>
-                <p class="mt-1 text-sm text-slate-900 dark:text-slate-200">{{ $user->createdBy ? $user->createdBy->name : 'N/A' }}</p>
+                <p class="mt-1 text-sm text-slate-900 dark:text-slate-200">{{ $user->creator ? $user->creator->name : 'N/A' }}</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Created At</label>
-                <p class="mt-1 text-sm text-slate-900 dark:text-slate-200">{{ \Carbon\Carbon::parse($user->created_at)->format('d-m-y g:i A') }}</p>
+                <p class="mt-1 text-sm text-slate-900 dark:text-slate-200">{{ \Carbon\Carbon::parse($user->created_at)->timezone('Asia/Dhaka')->format('d-m-Y g:i A') }}</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Admin Status</label>
                 <p class="mt-1 text-sm text-slate-900 dark:text-slate-200">{{ $user->isAdmin() ? 'Admin' : 'Non-Admin' }}</p>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Role</label>
+                <p class="mt-1 text-sm text-slate-900 dark:text-slate-200">{{ ucfirst($user->role) }}</p>
+            </div>
             @if (auth()->user()->isAdmin())
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Name Change History</h3>
-                    @if (!$user->previous_name)
+                    @if ($user->changes()->where('field_name', 'name')->count() == 0)
                         <p class="text-sm text-slate-600 dark:text-slate-400">No name changes recorded.</p>
                     @else
                         <div class="border-t border-slate-200 dark:border-slate-600">
@@ -47,16 +51,49 @@
                                 <thead class="bg-slate-50 dark:bg-slate-800">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Previous Name</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">New Name</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Changed By</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Changed At</th>
                                 </tr>
                                 </thead>
                                 <tbody class="bg-white dark:bg-slate-700 divide-y divide-slate-200 dark:divide-slate-600">
+                                @foreach ($user->changes()->where('field_name', 'name')->latest()->get() as $change)
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-200">{{ $change->old_value }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-200">{{ $change->new_value }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-200">{{ $change->changedBy ? $change->changedBy->name : 'N/A' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-300">{{ \Carbon\Carbon::parse($change->changed_at)->timezone('Asia/Dhaka')->format('d-m-Y g:i A') }}</td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 mt-6">Role Change History</h3>
+                    @if ($user->changes()->where('field_name', 'role')->count() == 0)
+                        <p class="text-sm text-slate-600 dark:text-slate-400">No role changes recorded.</p>
+                    @else
+                        <div class="border-t border-slate-200 dark:border-slate-600">
+                            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
+                                <thead class="bg-slate-50 dark:bg-slate-800">
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-200">{{ $user->previous_name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-200">{{ $user->nameChangedBy ? $user->nameChangedBy->name : 'N/A' }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-300">{{ $user->name_changed_at ? \Carbon\Carbon::parse($user->name_changed_at)->format('d-m-y g:i A'): 'N/A' }}</td>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Previous Role</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">New Role</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Changed By</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Changed At</th>
                                 </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-slate-700 divide-y divide-slate-200 dark:divide-slate-600">
+                                @foreach ($user->changes()->where('field_name', 'role')->latest()->get() as $change)
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-200">{{ ucfirst($change->old_value) }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-200">{{ ucfirst($change->new_value) }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-200">{{ $change->changedBy ? $change->changedBy->name : 'N/A' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-300">{{ \Carbon\Carbon::parse($change->changed_at)->timezone('Asia/Dhaka')->format('d-m-Y g:i A') }}</td>
+                                    </tr>
+                                @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -65,8 +102,8 @@
             @endif
         </div>
         @if (auth()->user()->isAdmin())
-            <div class="mt-6">
-                <a href="{{ route('users.edit', $user) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500">Edit Name</a>
+            <div class="mt-6 flex gap-4">
+                <a href="{{ route('users.edit', $user) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500">Edit User</a>
             </div>
         @endif
     </div>

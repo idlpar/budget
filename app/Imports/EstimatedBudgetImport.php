@@ -9,31 +9,30 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class EstimatedBudgetImport implements ToModel, WithHeadingRow
 {
-    protected $financial_year;
-    protected $user_id;
+    protected $financialYear;
+    protected $userId;
 
-    public function __construct($financial_year, $user_id)
+    public function __construct(string $financialYear, int $userId)
     {
-        $this->financial_year = $financial_year;
-        $this->user_id = $user_id;
+        $this->financialYear = $financialYear;
+        $this->userId = $userId;
     }
 
     public function model(array $row)
     {
         $accountHead = AccountHead::where('account_code', $row['account_code'])->first();
-
         if (!$accountHead) {
-            return null; // Skip rows with invalid account codes
+            return null;
         }
 
         return new Budget([
             'serial' => $row['serial'],
             'account_head_id' => $accountHead->id,
-            'account_code' => $row['account_code'], // Add this line
+            'account_code' => $row['account_code'],
             'amount' => $row['amount'],
             'type' => 'estimated',
-            'financial_year' => $this->financial_year,
-            'user_id' => $this->user_id,
+            'financial_year' => $this->financialYear,
+            'user_id' => $this->userId,
             'status' => 'active',
         ]);
     }

@@ -1,15 +1,34 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Section extends Model
 {
-    protected $fillable = ['name', 'department_id'];
+    use SoftDeletes;
+
+    protected $fillable = ['department_id', 'name', 'created_by', 'updated_by'];
 
     public function department()
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function changes()
+    {
+        return $this->hasMany(SectionChange::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     public function budgets()
@@ -17,8 +36,4 @@ class Section extends Model
         return $this->hasMany(Budget::class);
     }
 
-    public function approvals()
-    {
-        return $this->hasMany(Approval::class);
-    }
 }

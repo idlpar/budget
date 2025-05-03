@@ -32,13 +32,14 @@ class LogInController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'created_by' => auth()->id(),
         ]);
 
         event(new Registered($user));
 
-        Auth::login($user);
+        Log::info('User registered', ['user_id' => $user->id, 'created_by' => auth()->id()]);
 
-        return redirect()->route('verification.notice');
+        return redirect()->route('users.index')->with('success', 'User registered successfully.');
     }
 
     public function create()
