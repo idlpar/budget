@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 // Homepage (accessible to all)
 Route::get('/', function () {
-    \Log::info('Root route accessed');
+    Log::info('Root route accessed');
     return view('home');
 })->name('home');
 
@@ -54,7 +54,7 @@ Route::get('/check-admin', function () {
 })->name('check.admin')->middleware('auth');
 
 // Authentication Routes
-Route::middleware('auth', 'admin')->group(function () {
+Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/register', [LogInController::class, 'createRegister'])->name('register');
     Route::post('/register', [LogInController::class, 'storeRegister'])->name('register.store');
 });
@@ -124,7 +124,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/profile', [UserController::class, 'updateProfile'])->name('profile.update');
     Route::delete('/profile', [UserController::class, 'destroy'])->name('profile.destroy');
 
-    // Budget Imports (Admin only) - Moved before the hierarchy group to avoid route conflict
+    // Budget Imports (Admin only)
     Route::middleware('admin')->group(function () {
         Route::get('budgets/import', [BudgetController::class, 'showImportForm'])->name('budgets.import.form');
         Route::post('budgets/import/estimated', [BudgetController::class, 'importEstimated'])->name('budgets.import.estimated');
@@ -144,7 +144,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Expenses (Accessible to all, scoped by hierarchy)
     Route::middleware('hierarchy')->group(function () {
-        Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store']);
+        Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'register']);
         Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
         Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
     });
@@ -200,16 +200,17 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // API Routes for Dynamic Loading
-Route::middleware('auth')->group(function () {
-    Route::get('/api/divisions/{division}/departments', function (App\Models\Division $division) {
-        return response()->json($division->departments);
-    });
+Route::middleware(['auth'])->prefix('api')->group(function () {
+    Route::get('/divisions/{division}/departments', function (\App\Models\Division $division) {
+        return $division->departments()->select('id', 'name')->get();
+    })->name('api.divisions.departments');
 
-    Route::get('/api/departments/{department}/sections', function (App\Models\Department $department) {
-        return response()->json($department->sections);
-    });
+    Route::get('/departments/{department}/sections', function (\App\Models\Department $department) {
+        return $department->sections()->select('id', 'name')->get();
+    })->name('api.departments.sections');
+
+    Route::get('/sections/{section}', [OrganogramController::class, 'getSectionDetails'])->name('api.sections.details');
+    Route::get('/departments/{department}', [OrganogramController::class, 'getDepartmentDetails'])->name('api.departments.details');
+
+    Route::get('/account-heads/{accountHeadId}/remaining-budget', [ExpenseController::class, 'getRemainingBudget'])->name('api.account-heads.remaining-budget');
 });
-
-Route::get('/api/account-heads/{accountHeadId}/remaining-budget', [ExpenseController::class, 'getRemainingBudget']);
-Route::get('/api/divisions/{divisionId}/departments', [OrganogramController::class, 'getDepartments']);
-Route::get('/api/departments/{departmentId}/sections', [OrganogramController::class, 'getSections']);

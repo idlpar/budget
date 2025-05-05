@@ -296,4 +296,26 @@ class OrganogramController extends Controller
             return redirect()->back()->with('error', 'Failed to import organogram: ' . $e->getMessage());
         }
     }
+
+    public function getSectionDetails($sectionId)
+    {
+        $section = \App\Models\Section::with('department.division')->findOrFail($sectionId);
+        return response()->json([
+            'department_id' => $section->department_id,
+            'division_id' => $section->department->division_id,
+            'section_name' => $section->name,
+            'department_name' => $section->department ? $section->department->name : 'N/A',
+            'division_name' => $section->department && $section->department->division ? $section->department->division->name : 'N/A',
+        ]);
+    }
+
+    public function getDepartmentDetails($departmentId)
+    {
+        $department = \App\Models\Department::with('division')->findOrFail($departmentId);
+        return response()->json([
+            'division_id' => $department->division_id,
+            'department_name' => $department->name,
+            'division_name' => $department->division ? $department->division->name : 'N/A',
+        ]);
+    }
 }

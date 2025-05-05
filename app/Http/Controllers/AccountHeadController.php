@@ -244,4 +244,46 @@ class AccountHeadController extends Controller
             return redirect()->back()->with('error', 'Failed to import account heads: ' . $e->getMessage());
         }
     }
+
+    public function getRemainingBudget(Request $request, $accountHeadId)
+    {
+        try {
+            $financialYear = $request->input('financial_year', '2023-2024');
+
+            $budget = Budget::where('account_head_id', $accountHeadId)
+                ->where('financial_year', $financialYear)
+                ->where('status', 'active')
+                ->orderByRaw("CASE WHEN type = 'revised' THEN 1 WHEN type = 'estimated' THEN 2 ELSE 3 END")
+                ->first();
+
+            if (!$budget) {
+                return response()->json(['error' => 'No active budget found for this account head and financial year'], 404);
+            }
+
+            $totalExpenses = Expense::whereHas('transactionEntries', function ($q) use ($accountHeadId) {
+                $q->where('account_head_id', $accountHeadId);
+            })
+                ->where('status', 'approved')
+                ->where('financial_year', $financialYear)
+                ->sum('amount');
+
+            $remainingBudget = $budget->amount - $totalExpenses;
+
+            Log::info('Remaining budget calculated', [
+                'account_head_id' => $accountHeadId,
+                'financial_year' => $financialYear,
+                'budget_amount' => $budget->amount,
+                'total_expenses' => $totalExpenses,
+                'remaining_budget' => $remainingBudget,
+            ]);
+
+            return response()->json(['remaining_budget' => $remainingBudget]);
+        } catch (\Exception $e) {
+            Log::error('Error calculating remaining budget', [
+                'account_head_id' => $accountHeadId,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Unable to calculate remaining budget: ' . $e->getMessage()], 500);
+        }
+    }
 }
