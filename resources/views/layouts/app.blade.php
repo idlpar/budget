@@ -18,7 +18,7 @@
         @if (auth()->check() && !in_array(Route::currentRouteName(), ['home', 'login', 'register', 'password.request', 'password.reset', 'verification.notice', 'password.confirm', 'verification.verify']))
             <!-- Sidebar for authenticated users on non-excluded pages -->
             <x-sidebar />
-            <main class="flex-1 p-6 lg:p-8 bg-slate-50 dark:bg-slate-800 transition-all duration-300">
+            <main class="flex-1 p-2 lg:p-4 bg-slate-50 dark:bg-slate-800 transition-all duration-300">
                 @if (session('success'))
                     <div class="mb-4 p-4 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 rounded-lg">
                         {{ session('success') }}

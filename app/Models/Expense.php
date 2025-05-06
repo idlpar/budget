@@ -10,7 +10,7 @@ class Expense extends Model
     use HasFactory;
 
     protected $fillable = [
-        'account_head_id', 'budget_id', 'department_id', 'section_id', 'serial',
+        'account_head_id', 'budget_id', 'division_id', 'department_id', 'section_id', 'serial',
         'financial_year', 'amount', 'transaction_date', 'user_id', 'status',
         'approved_by', 'approved_at', 'transaction_id'
     ];
@@ -23,6 +23,11 @@ class Expense extends Model
     public function budget()
     {
         return $this->belongsTo(Budget::class);
+    }
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
     }
 
     public function department()

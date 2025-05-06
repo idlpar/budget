@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class ExpenseController extends Controller
 {
@@ -152,17 +153,19 @@ class ExpenseController extends Controller
         $user = auth()->user();
         $sectionsQuery = Section::query();
         $departmentsQuery = Department::query();
+        $divisionsQuery = Division::query();
 
         if (!$user->is_admin) {
             if ($user->division_id) {
+                $divisionsQuery->where('id', $user->division_id);
                 $departmentsQuery->where('division_id', $user->division_id);
                 $sectionsQuery->whereHas('department', function ($q) use ($user) {
                     $q->where('division_id', $user->division_id);
                 });
             }
             if ($user->department_id) {
-                $sectionsQuery->where('department_id', $user->department_id);
                 $departmentsQuery->where('id', $user->department_id);
+                $sectionsQuery->where('department_id', $user->department_id);
             }
             if ($user->section_id) {
                 $sectionsQuery->where('id', $user->section_id);
@@ -171,7 +174,7 @@ class ExpenseController extends Controller
 
         $sections = $sectionsQuery->get();
         $departments = $departmentsQuery->get();
-        $divisions = $user->is_admin ? Division::all() : Division::where('id', $user->division_id)->get();
+        $divisions = $divisionsQuery->get();
 
         \Log::info('Hierarchy data', [
             'user_id' => $user->id,
@@ -183,6 +186,7 @@ class ExpenseController extends Controller
             'department_count' => $departments->count(),
             'division_count' => $divisions->count(),
             'department_ids' => $departments->pluck('id')->toArray(),
+            'division_ids' => $divisions->pluck('id')->toArray(),
         ]);
 
         return view('expenses.create', compact('budgets', 'divisions', 'departments', 'sections', 'financialYears', 'financialYear'));
@@ -217,6 +221,7 @@ class ExpenseController extends Controller
         ], [
             'department_id_alt.exists' => 'The selected department is invalid.',
             'department_id.exists' => 'The department associated with the section is invalid.',
+            'division_id_alt.exists' => 'The selected division is invalid.',
         ]);
 
         if ($validator->fails()) {
@@ -227,13 +232,11 @@ class ExpenseController extends Controller
         try {
             DB::beginTransaction();
 
-            $departmentId = $request->section_id ? $request->department_id : $request->department_id_alt;
             $sectionId = $request->section_id ?: null;
+            $departmentId = $request->section_id ? $request->department_id : ($request->department_id_alt ?: null);
+            $divisionId = null;
 
-            if ($sectionId && !$departmentId) {
-                throw new \Exception('Department ID is required when a section is selected.');
-            }
-
+            // Determine division_id based on hierarchy
             if ($sectionId) {
                 $section = Section::findOrFail($sectionId);
                 if ($section->department_id != $departmentId) {
@@ -244,8 +247,19 @@ class ExpenseController extends Controller
                     ]);
                     throw new \Exception('Selected section does not belong to the chosen department.');
                 }
-            } elseif (!$departmentId) {
-                throw new \Exception('No department selected.');
+                $department = Department::findOrFail($departmentId);
+                $divisionId = $department->division_id;
+            } elseif ($departmentId) {
+                $department = Department::findOrFail($departmentId);
+                $divisionId = $department->division_id;
+            } elseif ($request->division_id_alt) {
+                $divisionId = $request->division_id_alt;
+            } else {
+                throw new \Exception('At least one of section, department, or division must be selected.');
+            }
+
+            if (!$divisionId) {
+                throw new \Exception('Division ID could not be determined.');
             }
 
             $errors = [];
@@ -285,6 +299,8 @@ class ExpenseController extends Controller
             }
 
             $transaction = Transaction::create([
+                'division_id' => $divisionId,
+                'department_id' => $departmentId,
                 'section_id' => $sectionId,
                 'transaction_date' => $request->transaction_date,
                 'description' => $request->description ?? 'Expense transaction',
@@ -301,6 +317,7 @@ class ExpenseController extends Controller
                     'budget_id' => $budgetIds[$index],
                     'department_id' => $departmentId,
                     'section_id' => $sectionId,
+                    'division_id' => $divisionId,
                     'serial' => $serial,
                     'financial_year' => $request->financial_year,
                     'amount' => $entry['raw_amount'],
@@ -327,6 +344,7 @@ class ExpenseController extends Controller
                 'budget_heads' => $request->budget_heads,
                 'department_id' => $departmentId,
                 'section_id' => $sectionId,
+                'division_id' => $divisionId,
                 'serial_start' => $maxSerial + 1,
                 'serial_end' => $serial - 1,
             ]);
@@ -366,7 +384,212 @@ class ExpenseController extends Controller
         return view('expenses.register', compact('expenses'));
     }
 
-    public function getRemainingBudget(Request $request, $accountHeadId)
+    public function approve(Request $request, Expense $expense)
+    {
+        $expense->update([
+            'status' => 'approved',
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+        ]);
+
+        \App\Models\ExpenseApproval::create([
+            'expense_id' => $expense->id,
+            'approver_id' => auth()->id(),
+            'level' => auth()->user()->role === 'division_head' ? 'division' : (auth()->user()->role === 'department_head' ? 'department' : 'section'),
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        Log::info('Expense approved', ['expense_id' => $expense->id, 'approved_by' => auth()->id()]);
+
+        return redirect()->route('expenses.index')->with('success', 'Expense approved.');
+    }
+
+    public function reject(Request $request, Expense $expense)
+    {
+        $expense->update(['status' => 'rejected']);
+
+        \App\Models\ExpenseApproval::create([
+            'expense_id' => $expense->id,
+            'approver_id' => auth()->id(),
+            'level' => auth()->user()->role === 'division_head' ? 'division' : (auth()->user()->role === 'department_head' ? 'department' : 'section'),
+            'status' => 'rejected',
+        ]);
+
+        Log::info('Expense rejected', ['expense_id' => $expense->id, 'rejected_by' => auth()->id()]);
+
+        return redirect()->route('expenses.index')->with('success', 'Expense rejected.');
+    }
+
+    public function bulkApprove(Request $request)
+    {
+        $request->validate([
+            'expense_ids' => 'required|string',
+        ]);
+
+        $expenseIds = array_filter(explode(',', $request->expense_ids));
+        if (empty($expenseIds)) {
+            return redirect()->route('expenses.index')->with('error', 'No expenses selected for approval.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $failed = [];
+            $successCount = 0;
+
+            foreach ($expenseIds as $expenseId) {
+                $expense = Expense::find($expenseId);
+                if (!$expense) {
+                    $failed[] = "Expense #{$expenseId}: Not found";
+                    continue;
+                }
+                if ($expense->status !== 'pending') {
+                    $failed[] = "Expense #{$expense->id}: Already " . ucfirst($expense->status);
+                    continue;
+                }
+
+                // Check authorization
+                if (!(auth()->user()->is_admin || auth()->user()->role === 'division_head' || auth()->user()->role === 'department_head')) {
+                    $failed[] = "Expense #{$expense->id}: Unauthorized";
+                    continue;
+                }
+
+                // Check budget limit
+                $budget = Budget::where('account_head_id', $expense->account_head_id)
+                    ->where('financial_year', $expense->financial_year)
+                    ->where('status', 'active')
+                    ->orderByRaw("CASE WHEN type = 'revised' THEN 1 WHEN type = 'estimated' THEN 2 ELSE 3 END")
+                    ->first();
+
+                if (!$budget) {
+                    $failed[] = "Expense #{$expense->id}: No active budget found";
+                    continue;
+                }
+
+                $totalExpenses = Expense::where('account_head_id', $expense->account_head_id)
+                    ->where('financial_year', $expense->financial_year)
+                    ->where('status', 'approved')
+                    ->sum('amount');
+
+                if ($totalExpenses + $expense->amount > $budget->amount) {
+                    $accountHead = AccountHead::find($expense->account_head_id);
+                    $failed[] = "Expense #{$expense->id}: Exceeds {$budget->type} budget limit for {$accountHead->name}";
+                    continue;
+                }
+
+                // Update expense
+                $expense->update([
+                    'status' => 'approved',
+                    'approved_by' => auth()->id(),
+                    'approved_at' => now(),
+                ]);
+
+                // Create ExpenseApproval record
+                \App\Models\ExpenseApproval::create([
+                    'expense_id' => $expense->id,
+                    'approver_id' => auth()->id(),
+                    'level' => auth()->user()->role === 'division_head' ? 'division' : (auth()->user()->role === 'department_head' ? 'department' : 'section'),
+                    'status' => 'approved',
+                    'approved_at' => now(),
+                ]);
+
+                // Update TransactionEntry (if not already created during store)
+                $transactionEntry = TransactionEntry::where('expense_id', $expense->id)->first();
+                if (!$transactionEntry) {
+                    TransactionEntry::create([
+                        'transaction_id' => $expense->transaction_id,
+                        'account_head_id' => $expense->account_head_id,
+                        'debit' => $expense->amount,
+                        'expense_id' => $expense->id,
+                    ]);
+                }
+
+                $successCount++;
+                Log::info('Expense approved in bulk', ['expense_id' => $expense->id, 'approved_by' => auth()->id()]);
+            }
+
+            DB::commit();
+            $message = "$successCount expense(s) approved successfully.";
+            if (!empty($failed)) {
+                $message .= ' Failures: ' . implode('; ', $failed);
+                return redirect()->route('expenses.index')->with('warning', $message);
+            }
+            return redirect()->route('expenses.index')->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to bulk approve expenses', ['error' => $e->getMessage()]);
+            return redirect()->route('expenses.index')->with('error', 'Failed to approve expenses: ' . $e->getMessage());
+        }
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate([
+            'expense_ids' => 'required|string',
+        ]);
+
+        $expenseIds = array_filter(explode(',', $request->expense_ids));
+        if (empty($expenseIds)) {
+            return redirect()->route('expenses.index')->with('error', 'No expenses selected for rejection.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $failed = [];
+            $successCount = 0;
+
+            foreach ($expenseIds as $expenseId) {
+                $expense = Expense::find($expenseId);
+                if (!$expense) {
+                    $failed[] = "Expense #{$expenseId}: Not found";
+                    continue;
+                }
+                if ($expense->status !== 'pending') {
+                    $failed[] = "Expense #{$expense->id}: Already " . ucfirst($expense->status);
+                    continue;
+                }
+
+                // Check authorization
+                if (!(auth()->user()->is_admin || auth()->user()->role === 'division_head' || auth()->user()->role === 'department_head')) {
+                    $failed[] = "Expense #{$expense->id}: Unauthorized";
+                    continue;
+                }
+
+                // Update expense
+                $expense->update([
+                    'status' => 'rejected',
+                    'approved_by' => auth()->id(),
+                    'approved_at' => now(),
+                ]);
+
+                // Create ExpenseApproval record
+                \App\Models\ExpenseApproval::create([
+                    'expense_id' => $expense->id,
+                    'approver_id' => auth()->id(),
+                    'level' => auth()->user()->role === 'division_head' ? 'division' : (auth()->user()->role === 'department_head' ? 'department' : 'section'),
+                    'status' => 'rejected',
+                    'approved_at' => now(),
+                ]);
+
+                $successCount++;
+                Log::info('Expense rejected in bulk', ['expense_id' => $expense->id, 'rejected_by' => auth()->id()]);
+            }
+
+            DB::commit();
+            $message = "$successCount expense(s) rejected successfully.";
+            if (!empty($failed)) {
+                $message .= ' Failures: ' . implode('; ', $failed);
+                return redirect()->route('expenses.index')->with('warning', $message);
+            }
+            return redirect()->route('expenses.index')->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to bulk reject expenses', ['error' => $e->getMessage()]);
+            return redirect()->route('expenses.index')->with('error', 'Failed to reject expenses: ' . $e->getMessage());
+        }
+    }
+
+        public function getRemainingBudget(Request $request, $accountHeadId)
     {
         try {
             $financialYear = $request->input('financial_year', '2023-2024');
@@ -405,42 +628,5 @@ class ExpenseController extends Controller
             ]);
             return response()->json(['error' => 'Unable to calculate remaining budget: ' . $e->getMessage()], 500);
         }
-    }
-
-    public function approve(Request $request, Expense $expense)
-    {
-        $expense->update([
-            'status' => 'approved',
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-        ]);
-
-        \App\Models\ExpenseApproval::create([
-            'expense_id' => $expense->id,
-            'approver_id' => auth()->id(),
-            'level' => auth()->user()->role === 'division_head' ? 'division' : (auth()->user()->role === 'department_head' ? 'department' : 'section'),
-            'status' => 'approved',
-            'approved_at' => now(),
-        ]);
-
-        Log::info('Expense approved', ['expense_id' => $expense->id, 'approved_by' => auth()->id()]);
-
-        return redirect()->route('expenses.index')->with('success', 'Expense approved.');
-    }
-
-    public function reject(Request $request, Expense $expense)
-    {
-        $expense->update(['status' => 'rejected']);
-
-        \App\Models\ExpenseApproval::create([
-            'expense_id' => $expense->id,
-            'approver_id' => auth()->id(),
-            'level' => auth()->user()->role === 'division_head' ? 'division' : (auth()->user()->role === 'department_head' ? 'department' : 'section'),
-            'status' => 'rejected',
-        ]);
-
-        Log::info('Expense rejected', ['expense_id' => $expense->id, 'rejected_by' => auth()->id()]);
-
-        return redirect()->route('expenses.index')->with('success', 'Expense rejected.');
     }
 }

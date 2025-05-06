@@ -10,6 +10,8 @@ class CreateTransactionsTable extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('division_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('department_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('section_id')->nullable()->constrained()->onDelete('set null');
             $table->date('transaction_date');
             $table->string('description');
@@ -21,6 +23,8 @@ class CreateTransactionsTable extends Migration
     public function down()
     {
         Schema::table('transactions', function (Blueprint $table) {
+            $table->dropForeign(['division_id']);
+            $table->dropForeign(['department_id']);
             $table->dropForeign(['section_id']);
             $table->dropForeign(['created_by']);
         });

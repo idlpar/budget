@@ -12,7 +12,8 @@ class CreateExpensesTable extends Migration
             $table->id();
             $table->unsignedBigInteger('account_head_id')->nullable();
             $table->unsignedBigInteger('budget_id')->nullable();
-            $table->unsignedBigInteger('department_id');
+            $table->unsignedBigInteger('division_id')->nullable();
+            $table->unsignedBigInteger('department_id')->nullable();
             $table->unsignedBigInteger('section_id')->nullable();
             $table->unsignedBigInteger('serial'); // Not primary key, will be managed in controller
             $table->string('financial_year')->nullable();
@@ -28,6 +29,7 @@ class CreateExpensesTable extends Migration
 
             $table->foreign('account_head_id')->references('id')->on('account_heads')->onDelete('set null');
             $table->foreign('budget_id')->references('id')->on('budgets')->onDelete('set null');
+            $table->foreign('division_id')->references('id')->on('divisions')->onDelete('cascade');
             $table->foreign('department_id')->references('id')->on('departments')->onDelete('cascade');
             $table->foreign('section_id')->references('id')->on('sections')->onDelete('set null');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

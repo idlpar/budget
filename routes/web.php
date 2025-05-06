@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 // Homepage (accessible to all)
 Route::get('/', function () {
-    Log::info('Root route accessed');
+    \Log::info('Root route accessed');
     return view('home');
 })->name('home');
 
@@ -59,53 +59,18 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/register', [LogInController::class, 'storeRegister'])->name('register.store');
 });
 
-Route::get('/login', [LogInController::class, 'create'])
-    ->middleware('guest')
-    ->name('login');
-
-Route::post('/login', [LogInController::class, 'store'])
-    ->middleware('guest')
-    ->name('login.store');
-
-Route::get('/forgot-password', [LogInController::class, 'createForgotPassword'])
-    ->middleware('guest')
-    ->name('password.request');
-
-Route::post('/forgot-password', [LogInController::class, 'storeForgotPassword'])
-    ->middleware('guest')
-    ->name('password.email');
-
-Route::get('/reset-password/{token}', [LogInController::class, 'createResetPassword'])
-    ->middleware('guest')
-    ->name('password.reset');
-
-Route::post('/reset-password', [LogInController::class, 'storeResetPassword'])
-    ->middleware('guest')
-    ->name('password.update');
-
-Route::get('/verify-email', [LogInController::class, 'showVerificationPrompt'])
-    ->middleware('auth')
-    ->name('verification.notice');
-
-Route::get('/verify-email/{id}/{hash}', [LogInController::class, 'verifyEmail'])
-    ->middleware(['auth', 'signed', 'throttle:6,1'])
-    ->name('verification.verify');
-
-Route::post('/email/verification-notification', [LogInController::class, 'sendVerificationEmail'])
-    ->middleware(['auth', 'throttle:6,1'])
-    ->name('verification.send');
-
-Route::get('/confirm-password', [LogInController::class, 'showConfirmPassword'])
-    ->middleware('auth')
-    ->name('password.confirm');
-
-Route::post('/confirm-password', [LogInController::class, 'storeConfirmPassword'])
-    ->middleware('auth')
-    ->name('password.confirm.store');
-
-Route::post('/logout', [LogInController::class, 'destroy'])
-    ->middleware('auth')
-    ->name('logout');
+Route::get('/login', [LogInController::class, 'create'])->middleware('guest')->name('login');
+Route::post('/login', [LogInController::class, 'store'])->middleware('guest')->name('login.store');
+Route::get('/forgot-password', [LogInController::class, 'createForgotPassword'])->middleware('guest')->name('password.request');
+Route::post('/forgot-password', [LogInController::class, 'storeForgotPassword'])->middleware('guest')->name('password.email');
+Route::get('/reset-password/{token}', [LogInController::class, 'createResetPassword'])->middleware('guest')->name('password.reset');
+Route::post('/reset-password', [LogInController::class, 'storeResetPassword'])->middleware('guest')->name('password.update');
+Route::get('/verify-email', [LogInController::class, 'showVerificationPrompt'])->middleware('auth')->name('verification.notice');
+Route::get('/verify-email/{id}/{hash}', [LogInController::class, 'verifyEmail'])->middleware(['auth', 'signed', 'throttle:6,1'])->name('verification.verify');
+Route::post('/email/verification-notification', [LogInController::class, 'sendVerificationEmail'])->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+Route::get('/confirm-password', [LogInController::class, 'showConfirmPassword'])->middleware('auth')->name('password.confirm');
+Route::post('/confirm-password', [LogInController::class, 'storeConfirmPassword'])->middleware('auth')->name('password.confirm.store');
+Route::post('/logout', [LogInController::class, 'destroy'])->middleware('auth')->name('logout');
 
 // Authenticated Routes
 Route::middleware(['auth'])->group(function () {
@@ -144,9 +109,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Expenses (Accessible to all, scoped by hierarchy)
     Route::middleware('hierarchy')->group(function () {
-        Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'register']);
+        Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store']);
+        Route::get('expenses/register', [ExpenseController::class, 'register'])->name('expenses.register');
         Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
         Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
+        Route::post('/expenses/bulk-approve', [ExpenseController::class, 'bulkApprove'])->name('expenses.bulk-approve');
+        Route::post('/expenses/bulk-reject', [ExpenseController::class, 'bulkReject'])->name('expenses.bulk-reject');
     });
 
     // Imports (Admin only)
